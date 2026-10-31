@@ -107,5 +107,19 @@ class CadenceTests(unittest.TestCase):
         with app.database() as c: c.execute('UPDATE subscriptions SET quote_expires=? WHERE id=?',('2020-01-01',sid))
         self.assertEqual(self.admin.post(f'/api/subscriptions/{sid}/transition',json={'action':'confirm'}).status_code,400)
         self.assertEqual(self.admin.post('/api/subscriptions',json={}).status_code,422)
+    def test_scheduler_auth_and_cross_origin(self):
+        self.assertEqual(self.admin.post('/api/internal/billing').status_code,401)
+        os.environ['CADENCE_BILLING_TOKEN']='unit-test-only-token'
+        try:
+            self.assertEqual(self.admin.post('/api/internal/billing',headers={'Authorization':'Bearer wrong'}).status_code,401)
+            self.assertEqual(self.admin.post('/api/internal/billing',headers={'Authorization':'Bearer unit-test-only-token'}).status_code,200)
+        finally: del os.environ['CADENCE_BILLING_TOKEN']
+        self.assertEqual(self.admin.post('/api/billing/run',headers={'Origin':'https://unrelated.example'},json={}).status_code,403)
+    def test_public_demo_restrictions(self):
+        previous=app.PUBLIC_DEMO;app.PUBLIC_DEMO=True
+        try:
+            for route in ('/api/signup','/api/reset-request','/api/reset','/api/catalog/staff'):
+                self.assertEqual(self.admin.post(route,json={}).status_code,403)
+        finally: app.PUBLIC_DEMO=previous
 
 if __name__=='__main__': unittest.main(verbosity=2)

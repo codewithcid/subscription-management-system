@@ -381,6 +381,13 @@ def billing_run(request:Request):
     user(request,['admin','staff'])
     return process_billing()
 
+@app.post('/api/internal/billing')
+def scheduled_billing(request:Request):
+    token=os.getenv('CADENCE_BILLING_TOKEN','')
+    supplied=request.headers.get('Authorization','').removeprefix('Bearer ')
+    if not token or not hmac.compare_digest(token,supplied): fail('Unauthorized scheduler.',401)
+    return process_billing()
+
 def process_billing():
     count=0
     with database() as c:

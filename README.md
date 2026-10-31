@@ -1,6 +1,8 @@
 # Cadence
 
-A subscription operations workspace built for the Subscription Management System hackathon brief. A custom animated frontend, a FastAPI API, and persistent SQLite storage run together locally.
+**Live demo:** https://cadence-odoo.onrender.com · **Repository branch:** `codex/cadence-build`
+
+A subscription operations workspace built for the Subscription Management System hackathon brief. A custom animated frontend, a FastAPI API, and persistent storage run together: SQLite locally, PostgreSQL on Render.
 
 ## Run
 
@@ -24,6 +26,9 @@ The admin controls catalog, staff, taxes, and discounts. Staff manage subscripti
 
 ## What stands out
 
+- **Revenue Lab:** an interactive twelve-month pricing, churn and growth simulator. Starts from actual workspace MRR and shows its assumptions explicitly. No AI API or prediction claim.
+- **Guided tour:** a three-minute presentation path through billing rehearsal, revenue scenarios, and the customer journey.
+
 - **Billing rehearsal:** a 0–90 day preview calculated using the same billing rules as invoice generation. Surfaces overdue accounts and ineligible discounts, with expected billing and amounts requiring review.
 - **Customer journey:** a subscription lifecycle and event timeline from draft through quotation, confirmation, activation, pause, renewal, and closure.
 - **Considered visual design:** original CSS/SVG brand artwork, animated orbital illustration, chart transitions, responsive navigation, keyboard search, focus trapping, and reduced-motion support.
@@ -35,7 +40,11 @@ Customer signup and sign-in; hashed passwords and expiring HttpOnly sessions; si
 
 The first subscription line takes the selected plan's per-seat price, plus the optional product variant surcharge. Additional product lines use their catalog sales price on that plan's billing interval. Taxes apply to the discounted total. Invoice lines and totals are stored at billing time.
 
-## Recurring billing worker
+## Deployed recurring billing
+
+GitHub Actions calls the protected billing endpoint every six hours (`17 */6 * * *`, UTC). A manual workflow dispatch is also available. The randomly generated `CADENCE_BILLING_TOKEN` is stored in GitHub Secrets and Render environment settings, never in source. Scheduling creates drafts only and never collects money. GitHub scheduled runs may be delayed; the idempotent billing engine catches up on the next run.
+
+## Local recurring billing worker
 
 The UI can run billing on demand. To run it periodically in another terminal:
 
@@ -62,10 +71,28 @@ Tests use separate temporary databases. They cover account isolation, permission
 5. Run billing, inspect the draft, confirm it, and record an external payment.
 6. Switch to the Customer demo to show the scoped portal.
 
-## Current boundaries
+## Deployment
 
-This is a local hackathon build, not an audited production billing system. Email is stored in the admin-visible local outbox; no real messages are sent. Payment entry records receipts and does not integrate a payment gateway. SQLite runs on one machine; a production release needs PostgreSQL/migrations, pagination and server-side analytics, provider integrations, authentication abuse protection, removal of seeded demo access, and deployment-specific session/CSRF hardening. `CADENCE_SECURE_COOKIE=1` enables secure cookies behind HTTPS. `CADENCE_DB` overrides the database path. Google Fonts are used when online, with system font fallbacks.
+The frontend and API share one HTTPS origin on Render Singapore; PostgreSQL 17 uses Render's internal network. `/api/health` verifies database access. The database rejects external internet connections. Environment settings are managed in Render (not a Blueprint): `DATABASE_URL`, `CADENCE_PUBLIC_DEMO=1`, `CADENCE_SECURE_COOKIE=1`, `CADENCE_BILLING_TOKEN`, and `PYTHON_VERSION=3.12.8`.
 
-Renewal currently creates a one-year term. A billing pass limits historical catch-up to 400 periods per subscription; the next pass continues from the saved cursor. Taxes are snapshotted per subscription. Catalog entries can be created but editing existing commercial terms/proration is not yet implemented. Invoice email and reset links require a real email provider before external use.
+GitHub Actions runs integration checks for pushes and pull requests. Render automatically deploys the default branch `codex/cadence-build`. Work on feature branches and use pull requests for team collaboration.
 
-The repository has not been pushed to GitHub; publication requires the owner's approval.
+## Public demo boundaries
+
+The public instance is a shared hackathon demo with synthetic records. Signup, password reset and staff creation are disabled there; use the three demo roles. The full account workflows remain available locally. Passwords are hashed, cookies are HttpOnly/SameSite/Secure over HTTPS, auth requests are rate limited, cross-origin writes are rejected, and API responses are not cached.
+
+Email is queued in an admin-visible demo outbox; no actual emails are sent. Payments record receipts; no actual card or UPI collection is connected. Do not enter real customer data. Live provider integration is separate from demo billing.
+
+The free Render web service sleeps after inactivity and can take about a minute to wake. Its free database expires on **30 November 2026** unless upgraded. Production use needs paid always-on hosting, backups, stronger auth/tenant isolation, pagination, a connection pool, and real provider integrations. The core billing calculations are tested, but the app is not an audited financial system.
+
+Renewal currently starts a one-year term. One billing pass catches up at most 400 historical periods per subscription; subsequent passes continue at the saved cursor. Taxes are snapshotted per subscription, and invoice lines/totals are snapshotted at billing. Catalog creation is supported; editing live commercial terms and proration remain follow-ups. Google Fonts load online with system fallbacks.
+
+## Live smoke test
+
+Against the synthetic demo only:
+
+```powershell
+py verify_live.py https://cadence-odoo.onrender.com
+```
+
+This creates one closed verification subscription and a paid synthetic invoice, and checks PostgreSQL, lifecycle transitions, multiple lines, duplicate billing/payment prevention, and customer isolation.
