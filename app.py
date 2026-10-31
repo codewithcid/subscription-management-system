@@ -16,7 +16,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.staticfiles import StaticFile
 
 ROOT = Path(__file__).parent
 DB = os.getenv('CADENCE_DB', str(ROOT / 'cadence.db'))
