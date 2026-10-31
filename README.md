@@ -1,6 +1,6 @@
 # Cadence
 
-**Live demo:** https://cadence-odoo.onrender.com · **Repository branch:** `codex/cadence-build`
+**Live demo:** https://cadence-odoo.onrender.com · **Repository branch:** `sid/cadence-build`
 
 A subscription operations workspace built for the Subscription Management System hackathon brief. A custom animated frontend, a FastAPI API, and persistent storage run together: SQLite locally, PostgreSQL on Render.
 
@@ -75,7 +75,7 @@ Tests use separate temporary databases. They cover account isolation, permission
 
 The frontend and API share one HTTPS origin on Render Singapore; PostgreSQL 17 uses Render's internal network. `/api/health` verifies database access. The database rejects external internet connections. Environment settings are managed in Render (not a Blueprint): `DATABASE_URL`, `CADENCE_PUBLIC_DEMO=1`, `CADENCE_SECURE_COOKIE=1`, `CADENCE_BILLING_TOKEN`, and `PYTHON_VERSION=3.12.8`.
 
-GitHub Actions runs integration checks for pushes and pull requests. Render automatically deploys the default branch `codex/cadence-build`. Work on feature branches and use pull requests for team collaboration.
+GitHub Actions runs integration checks for pushes and pull requests. Render automatically deploys the default branch `sid/cadence-build`. Work on feature branches and use pull requests for team collaboration.
 
 ## Public demo boundaries
 
